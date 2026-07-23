@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <!--
+      Fonts are bundled locally (client/public/fonts/) so the app makes
+      ZERO network requests on launch. Do not add fonts.googleapis.com /
+      fonts.gstatic.com <link>s back here — they break the offline
+      guarantee for the standalone Android APK and add a 2-3s timeout to
+      every cold launch when the device has no internet.
+    -->
+    <link href="/fonts/fonts.css" rel="stylesheet">
+    <title>S2000 Digital Gauge Cluster - KPro Telemetry</title>
+    <meta name="description" content="Custom S2000-style digital gauge cluster with Hondata KPro ECU Bluetooth integration for real-time telemetry monitoring">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

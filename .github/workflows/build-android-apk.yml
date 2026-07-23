@@ -1,0 +1,175 @@
+name: Build Android APK
+
+# Keeps the bundled APK at public/downloads/app-release.apk fresh.
+#
+# Triggers:
+#   - Push of a version tag (v*.*.*) — builds, commits the refreshed APK
+#     back to the default branch, and attaches it to a GitHub Release.
+#   - Manual dispatch — same build, with an option to skip the commit
+#     (useful for ad-hoc verification builds).
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      commit_apk:
+        description: 'Commit the refreshed APK back to the default branch'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      release_tag:
+        description: 'Optional tag name to attach the APK to as a release artifact (leave blank to skip)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use the default GITHUB_TOKEN so the follow-up commit can push back.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Cache Gradle's downloaded dependencies and the wrapper distribution so
+      # subsequent runs skip the multi-minute dependency resolution + wrapper
+      # download. Keyed on the Gradle build files so a real dependency change
+      # invalidates the cache; otherwise restore-keys gives us a warm start.
+      - name: Cache Gradle caches and wrapper
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties', 'android/gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # Cache the Android SDK install (platforms, build-tools, platform-tools,
+      # cmdline-tools) so android-actions/setup-android can short-circuit the
+      # ~hundreds-of-MB sdkmanager downloads on cache hits. The SDK is keyed on
+      # the exact package list below so changing it invalidates the cache.
+      - name: Cache Android SDK
+        id: android-sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT || '/usr/local/lib/android/sdk' }}/platforms
+            ${{ env.ANDROID_SDK_ROOT || '/usr/local/lib/android/sdk' }}/build-tools
+            ${{ env.ANDROID_SDK_ROOT || '/usr/local/lib/android/sdk' }}/platform-tools
+            ${{ env.ANDROID_SDK_ROOT || '/usr/local/lib/android/sdk' }}/cmdline-tools
+          key: ${{ runner.os }}-android-sdk-platforms-android-34-build-tools-34.0.0-platform-tools
+
+      - name: Set up Android SDK (platform 34, build-tools 34.0.0)
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Capacitor toolchain (dev-only, not committed to package.json)
+        run: |
+          npm install --no-save \
+            @capacitor/core @capacitor/cli @capacitor/android \
+            @capacitor/app @capacitor/preferences @capacitor/screen-orientation \
+            @capacitor/status-bar @capacitor/splash-screen \
+            @capacitor/assets \
+            @capacitor-community/bluetooth-le \
+            @capacitor-community/keep-awake \
+            @capawesome/capacitor-android-edge-to-edge-support
+
+      - name: Build the APK
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          # Optional release-signing secrets. When all four are set the build
+          # script signs the APK with the real keystore; otherwise it falls
+          # back to debug signing so the workflow keeps working without them.
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: bash scripts/build-android.sh release
+
+      - name: Stage the freshly built APK into public/downloads
+        run: |
+          set -euo pipefail
+          APK_SRC="android/app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK_SRC" ]; then
+            echo "ERROR: expected APK at $APK_SRC was not produced." >&2
+            exit 1
+          fi
+          mkdir -p public/downloads
+          cp "$APK_SRC" public/downloads/app-release.apk
+          ls -lh public/downloads/app-release.apk
+
+      - name: Upload APK as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: public/downloads/app-release.apk
+          if-no-files-found: error
+
+      - name: Commit refreshed APK back to the default branch
+        if: |
+          (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+          (github.event_name == 'workflow_dispatch' && inputs.commit_apk == 'true')
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          git fetch origin "$DEFAULT_BRANCH"
+          git checkout "$DEFAULT_BRANCH"
+
+          # Re-stage the APK after the branch switch.
+          mkdir -p public/downloads
+          cp android/app/build/outputs/apk/release/app-release.apk public/downloads/app-release.apk
+
+          if git diff --quiet -- public/downloads/app-release.apk; then
+            echo "No APK changes to commit."
+            exit 0
+          fi
+
+          REF_NAME="${GITHUB_REF_NAME:-manual}"
+          git add public/downloads/app-release.apk
+          git commit -m "Refresh bundled Android APK ($REF_NAME) [skip ci]"
+          git push origin "$DEFAULT_BRANCH"
+
+      - name: Attach APK to GitHub Release
+        if: |
+          (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+          (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+          files: public/downloads/app-release.apk
+          fail_on_unmatched_files: true
+          generate_release_notes: true

@@ -1,0 +1,7 @@
+{
+  "_comment": "Consumed by `npx capacitor-assets generate --android --assetPath branding/android`. Source PNGs in this folder are resized into all the mipmap-* and drawable-* density buckets at build time. The hex below is the adaptive-icon background colour (matches the icon's dark navy).",
+  "iconBackgroundColor": "#0a0e14",
+  "iconBackgroundColorDark": "#0a0e14",
+  "splashBackgroundColor": "#000000",
+  "splashBackgroundColorDark": "#000000"
+}

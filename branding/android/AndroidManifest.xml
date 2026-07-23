@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  S2000 Gauges — AndroidManifest.xml override.
+
+  Copied into android/app/src/main/AndroidManifest.xml by
+  scripts/build-android.sh AFTER `npx cap add android`. This template is
+  based on the Capacitor 6 default and adds the bits we need for broad
+  compatibility:
+
+    - <supports-screens ... />          ← Samsung Galaxy Tab S/A/Active,
+                                          phones, in-dash head units
+    - <uses-feature touchscreen=false>  ← head units without a touch
+                                          screen aren't filtered out
+    - <uses-feature usb.host=false>     ← USB-OTG works where present,
+                                          isn't required (Bluetooth +
+                                          server work without it)
+    - <queries ... />                   ← lets the app open install
+                                          intents and HTTPS links from
+                                          inside the WebView under
+                                          Android 11+ package visibility
+    - INTERNET permission stays for the OPTIONAL custom-server feature
+      (Settings → Server). Without a configured server the app makes
+      ZERO network calls — fully offline.
+
+  If a future Capacitor upgrade changes the activity attributes, update
+  this template; keep the diff small and the comments honest.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Required so the OPTIONAL custom-server feature (Settings → Server)
+         can reach a LAN host. With no host configured the app never
+         issues a network request. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Bluetooth ELM327 adapter support -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Keep the screen on while gauges are visible -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- All hardware below is OPTIONAL so the Play Store / OEM filters
+         don't hide the app from any device class (phone, tablet, head
+         unit, Galaxy Tab Active, etc.). -->
+    <uses-feature android:name="android.hardware.touchscreen"   android:required="false" />
+    <uses-feature android:name="android.hardware.usb.host"      android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth"     android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le"  android:required="false" />
+    <uses-feature android:name="android.hardware.location"      android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps"  android:required="false" />
+
+    <!-- Explicitly support every screen size from Samsung Galaxy phones
+         (small/normal) up through Tab S / Tab A / Tab Active (large /
+         xlarge) and any density. -->
+    <supports-screens
+        android:smallScreens="true"
+        android:normalScreens="true"
+        android:largeScreens="true"
+        android:xlargeScreens="true"
+        android:anyDensity="true"
+        android:resizeable="true" />
+
+    <!-- Android 11+ package-visibility queries: needed so the WebView
+         can hand off http(s) and tel: intents to the user's chosen
+         browser/dialer when the user taps an external link. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+            android:name="com.s2000.kprogauges.MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+</manifest>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  S2000 Gauges — string resources override.
+  Copied into android/app/src/main/res/values/strings.xml by
+  scripts/build-android.sh. Sets the launcher label that appears under
+  the icon on the home screen.
+-->
+<resources>
+    <string name="app_name">S2000 Gauges</string>
+    <string name="title_activity_main">S2000 Gauges</string>
+    <string name="package_name">com.s2000.kprogauges</string>
+    <string name="custom_url_scheme">com.s2000.kprogauges</string>
+</resources>

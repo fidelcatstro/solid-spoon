@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "36GTZY2hGI4ahM4xXZ2lh"
+uri = "file://branding/android/ic_launcher.png"
+type = "image"
+title = "s2000 launcher icon"
+
+[[generated]]
+id = "P4zD6vTPzWrm4_bHY7A78"
+uri = "file://branding/android/ic_launcher_foreground.png"
+type = "image"
+title = "s2000 adaptive foreground"
+
+[[generated]]
+id = "gh6FqYdUrXJEGG_rfg0v5"
+uri = "file://branding/android/splash.png"
+type = "image"
+title = "s2000 splash screen"

@@ -1,0 +1,25 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+# Capacitor / Android build artifacts (the android/ project itself is
+# generated on the build machine via `npx cap add android`).
+android/.gradle
+android/build
+android/app/build
+android/local.properties
+android/.idea
+android/captures
+*.apk
+*.aab
+public/downloads/
+# …but DO ship the prebuilt sideload APK and its README so
+# /api/download-apk works on a fresh checkout without requiring an
+# Android SDK on the server. See android/README.md → "Refreshing the
+# bundled APK".
+!public/downloads/
+!public/downloads/README.md
+!public/downloads/app-release.apkproject_code.zip
+zigmElWR
