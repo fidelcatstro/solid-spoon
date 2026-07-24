@@ -8,8 +8,7 @@ else
   echo "Android platform already exists, syncing..."
   npx @capacitor/cli sync android
 fi
-echo "Entering android directory..."
-cd android
-chmod +x ./gradlew
-./gradlew assembleDebug
+echo "Running gradle build via absolute path..."
+chmod +x ./android/gradlew
+./android/gradlew assembleDebug -p ./android
 echo "Build completed successfully!"
