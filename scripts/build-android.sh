@@ -161,12 +161,12 @@ if [ "$FLAVOR" != "debug" ]; then
 fi
 
 pushd android > /dev/null
-chmod +x cd android ./gradlew./gradlew ./gradlew 2>/dev/null || true
+chmod +x cd android cd android ./gradlew./gradlew ./gradlewcd android ./gradlew./gradlew ./gradlew cd android ./gradlew./gradlew ./gradlew 2>/dev/null || true
 if [ "$FLAVOR" = "debug" ]; then
-  cd android ./gradlew./gradlew ./gradlew assembleDebug
+  cd android cd android ./gradlew./gradlew ./gradlewcd android ./gradlew./gradlew ./gradlew cd android ./gradlew./gradlew ./gradlew assembleDebug
   APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
 else
-  cd android ./gradlew./gradlew ./gradlew assembleRelease "${GRADLE_SIGNING_ARGS[@]}"
+  cd android cd android ./gradlew./gradlew ./gradlewcd android ./gradlew./gradlew ./gradlew cd android ./gradlew./gradlew ./gradlew assembleRelease "${GRADLE_SIGNING_ARGS[@]}"
   APK_PATH="app/build/outputs/apk/release/app-release.apk"
   if [ ! -f "$APK_PATH" ]; then
     # Some Capacitor templates produce app-release-unsigned.apk. Sign it with
