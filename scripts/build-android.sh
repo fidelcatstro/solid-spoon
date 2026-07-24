@@ -2,12 +2,13 @@
 set -e
 echo "Starting Android build process..."
 npm run build
-if [ ! -d "android" ]; then
-  echo "Android directory missing, adding platform..."
-  npx cap add android
+npx @capacitor/cli copy android
+npx @capacitor/cli update android
+if [ ! -f "android/gradlew" ]; then
+  echo "Gradle wrapper missing, generating android platform..."
+  npx @capacitor/cli add android
 fi
-npx cap sync android
-echo "Navigating to Android directory..."
+echo "Entering android directory..."
 cd android
 chmod +x ./gradlew
 ./gradlew assembleDebug
