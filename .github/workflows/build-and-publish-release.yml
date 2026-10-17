@@ -1,0 +1,66 @@
+name: Build and Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: {}
+
+jobs:
+  build-windows:
+    name: Build Windows installer and publish
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build client & bundle server
+        run: npm run build
+
+      - name: Install NSIS and 7zip
+        shell: powershell
+        run: |
+          choco install -y nsis 7zip
+
+      - name: Build Windows NSIS installer
+        run: npm run electron:build:nsis
+        env:
+          CI: true
+
+      - name: Zip release folder
+        shell: powershell
+        run: |
+          if (Test-Path release) {
+            Compress-Archive -Path (Join-Path -Path "release" -ChildPath '*') -DestinationPath release.zip -Force
+          } else {
+            Write-Error "release folder not found"
+            exit 1
+          }
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows ZIP to release
+        uses: actions/upload-release-asset@v2
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: release.zip
+          asset_name: ${{ github.ref_name }}-windows.zip
+          asset_content_type: application/zip
