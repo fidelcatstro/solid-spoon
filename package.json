@@ -37,7 +37,7 @@
         "portable",
         "nsis"
       ],
-      "artifactName": "${productName}-${version}-${os}.${ext}"
+      "artifactName": "${name}-${version}-${os}.${ext}"
     }
   },
   "dependencies": {
